@@ -21,7 +21,5 @@ COPY ./generator_scripted.pt /code/generator_scripted.pt
 RUN mkdir -p /code/static/images
 
 # Expose FastAPI port
-EXPOSE 8000
-
-# Start command
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start command dynamically using PORT environment variable
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
