@@ -1,0 +1,28 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Databases & local sqlite
+capstone.db
+*.db
+*.sqlite
+
+# Environment variables (secret keys)
+.env
+.env.local
+
+# Local generated static images
+static/images/*
+!static/images/.gitkeep
+
+# IDE files
+.vscode/
+.idea/
