@@ -12,26 +12,24 @@ device = torch.device("cpu")
 model = None
 
 def load_model():
-    global model
-    if not os.path.exists(MODEL_PATH):
-        print(f"Warning: Model file '{MODEL_PATH}' not found in backend directory!")
-        return
-        
-    try:
-        # Limit PyTorch CPU threads to significantly reduce RAM consumption on small servers
-        torch.set_num_threads(1)
-        torch.set_num_interop_threads(1)
-        
-        # Load TorchScript model
-        model = torch.jit.load(MODEL_PATH, map_location=device)
-        model.eval()
-        print("AI model loaded successfully!")
-    except Exception as e:
-        print(f"Error loading model: {e}")
+    # Model is now loaded on-demand during generation to keep startup memory extremely low
+    # and prevent Railway Out Of Memory (OOM) crashes on startup.
+    pass
 
 def generate_songket(category_idx: int, seed: int = None) -> tuple[str, int]:
-    if model is None:
-        raise Exception("generator_scripted.pt model not loaded.")
+    # Limit PyTorch CPU threads to significantly reduce RAM consumption
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
+    
+    if not os.path.exists(MODEL_PATH):
+        raise Exception(f"Model file '{MODEL_PATH}' not found!")
+        
+    try:
+        # Load TorchScript model on-demand
+        model = torch.jit.load(MODEL_PATH, map_location=device)
+        model.eval()
+    except Exception as e:
+        raise Exception(f"Failed to load model: {e}")
     
     if seed is not None:
         torch.manual_seed(seed)
@@ -66,10 +64,19 @@ def generate_songket(category_idx: int, seed: int = None) -> tuple[str, int]:
         filepath = os.path.join(OUTPUT_DIR, filename)
         img_upscaled.save(filepath, format="WEBP", quality=85)
         
-        # Explicitly clean up memory
+        # Explicitly clean up model and tensors from memory
+        del model
         del noise
         del labels
         del fake_image
         gc.collect()
+        
+        # Trim malloc memory arena to release RAM back to the OS immediately
+        try:
+            import ctypes
+            libc = ctypes.CDLL("libc.so.6")
+            libc.malloc_trim(0)
+        except Exception:
+            pass
         
         return filename, seed
