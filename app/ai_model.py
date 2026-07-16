@@ -4,6 +4,8 @@ import os
 import uuid
 import gc
 
+# Optimized version for low-RAM environment deployment (Railway)
+
 MODEL_PATH = "generator_scripted.pt"
 OUTPUT_DIR = "static/images"
 
